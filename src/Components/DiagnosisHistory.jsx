@@ -1,3 +1,4 @@
+// Components/DiagnosisHistory.js
 import React from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -11,7 +12,7 @@ import {
   Legend
 } from 'chart.js';
 
-// Make sure these paths match your project structure
+// Ensure these paths are correct
 import respiratoryIcon from "../assets/respiratory.png";
 import temperatureIcon from '../assets/temperature.png';
 import heartRateIcon from '../assets/HeartBP.png';
@@ -27,17 +28,19 @@ ChartJS.register(
 );
 
 const DiagnosisHistory = ({ patientData }) => {
-  // 1. Safety Check: If no patient is selected yet, show nothing or a loading state
+  // 1. Safety Check
   if (!patientData || !patientData.diagnosis_history) {
-    return <div className="p-6 bg-white rounded-[30px] shadow-sm">Select a patient to view history.</div>;
+    return (
+      <div className="p-6 bg-white rounded-[30px] shadow-sm flex items-center justify-center h-full text-gray-400">
+        Select a patient to view history.
+      </div>
+    );
   }
 
   // 2. Prepare Data
-  // The API usually returns history with the most recent first. 
-  // We take the first 6 items, then reverse them so the chart goes from Oldest -> Newest (Left -> Right)
   const history = patientData.diagnosis_history;
   const recentHistory = history.slice(0, 6).reverse(); 
-  const latest = history[0]; // The most recent month for the stats cards
+  const latest = history[0]; 
 
   // --- Chart Data Configuration ---
   const chartData = {
@@ -78,7 +81,7 @@ const DiagnosisHistory = ({ patientData }) => {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#072635', font: { size: 12 } }
+        ticks: { color: '#072635', font: { size: 11 } } // Slightly smaller font for mobile x-axis
       },
       y: {
         beginAtZero: false,
@@ -97,108 +100,127 @@ const DiagnosisHistory = ({ patientData }) => {
       value: `${latest.respiratory_rate.value} bpm`,
       status: latest.respiratory_rate.levels,
       bgColor: "bg-[#E0F3FA]",
-      icon: <img src={respiratoryIcon} alt="respiratory" className="w-10 h-10" />,
+      icon: respiratoryIcon,
     },
     {
       title: "Temperature",
       value: `${latest.temperature.value}°F`,
       status: latest.temperature.levels,
       bgColor: "bg-[#FFE6E9]",
-      icon: <img src={temperatureIcon} alt="temperature" className="w-10 h-10" />,
+      icon: temperatureIcon,
     },
     {
       title: "Heart Rate",
       value: `${latest.heart_rate.value} bpm`,
       status: latest.heart_rate.levels,
-      isWarning: latest.heart_rate.levels.toLowerCase() !== 'normal', // Simple logic to show warning icon
+      isWarning: latest.heart_rate.levels.toLowerCase() !== 'normal',
       bgColor: "bg-[#FFE6F1]",
-      icon: <img src={heartRateIcon} alt="heart rate" className="w-10 h-10" />,
+      icon: heartRateIcon,
     }
   ];
 
   return (
-    <div className="bg-white p-6 rounded-[30px] w-full shadow-sm h-full">
-      <h2 className="text-2xl font-bold text-[#072635] mb-8">Diagnosis History</h2>
+    <div className="bg-white p-4 sm:p-6 rounded-[20px] sm:rounded-[30px] w-full shadow-sm h-full flex flex-col">
+      <h2 className="text-lg sm:text-2xl font-bold text-[#072635] mb-4 sm:mb-8">Diagnosis History</h2>
       
       {/* --- Top Section: Blood Pressure Chart --- */}
-      <div className="bg-[#F4F0FE] p-6 rounded-2xl mb-6">
+      <div className="bg-[#F4F0FE] p-4 sm:p-6 rounded-2xl mb-6 flex flex-col lg:flex-row gap-6 lg:gap-8">
         
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-bold text-[#072635]">Blood Pressure</h2>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Chart Graphic */}
-          <div className="flex-1 h-64 lg:h-auto">
+        {/* Left Side: Chart */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base sm:text-lg font-bold text-[#072635]">Blood Pressure</h2>
+            <div className="flex gap-4 sm:hidden">
+               {/* Mobile Legend (Simplified) */}
+               <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#E66FD2]"></div><span className="text-xs">Sys</span></div>
+               <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-[#8C6FE6]"></div><span className="text-xs">Dia</span></div>
+            </div>
+          </div>
+          
+          {/* Chart Container - Min height ensures it doesn't squash on mobile */}
+          <div className="relative w-full min-h-[200px] sm:min-h-[250px] lg:h-auto flex-1">
             <Line data={chartData} options={chartOptions} />
           </div>
+        </div>
 
-          {/* Chart Legend/Stats (Current Latest Data) */}
-          <div className="w-full lg:w-1/3 flex flex-col gap-4">
-            
-            {/* Systolic */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-3 h-3 rounded-full bg-[#E66FD2]"></span>
-                <span className="text-sm font-bold text-[#072635]">Systolic</span>
-              </div>
-              <div className="text-2xl font-bold text-[#072635] mb-1">
-                {latest.blood_pressure.systolic.value}
-              </div>
-              <div className="flex items-center text-sm text-[#072635]">
-                {latest.blood_pressure.systolic.levels === 'Higher than Average' ? (
-                   <span className="mr-2">▲</span>
-                ) : latest.blood_pressure.systolic.levels === 'Lower than Average' ? (
-                   <span className="mr-2">▼</span>
-                ) : (
-                   <span className="mr-2">-</span>
-                )}
-                <span>{latest.blood_pressure.systolic.levels}</span>
-              </div>
+        {/* Right Side: Stats (Desktop Legend) */}
+        <div className="w-full lg:w-auto lg:min-w-[200px] flex flex-row lg:flex-col gap-4 justify-between lg:justify-start">
+          
+          {/* Systolic */}
+          <div className="flex-1 lg:flex-none">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-3 h-3 rounded-full bg-[#E66FD2]"></span>
+              <span className="text-sm font-bold text-[#072635]">Systolic</span>
             </div>
+            <div className="text-xl sm:text-2xl font-bold text-[#072635] mb-1">
+              {latest.blood_pressure.systolic.value}
+            </div>
+            <div className="flex items-center text-xs sm:text-sm text-[#072635]">
+              {latest.blood_pressure.systolic.levels === 'Higher than Average' ? (
+                  <span className="mr-2">▲</span>
+              ) : latest.blood_pressure.systolic.levels === 'Lower than Average' ? (
+                  <span className="mr-2">▼</span>
+              ) : (
+                  <span className="mr-2">-</span>
+              )}
+              <span>{latest.blood_pressure.systolic.levels}</span>
+            </div>
+          </div>
 
-            {/* Divider */}
-            <div className="border-t border-gray-300 my-2"></div>
+          {/* Divider - Hidden on mobile row view, visible on desktop column view */}
+          <div className="hidden lg:block border-t border-gray-300 my-2"></div>
+          {/* Mobile Vertical Divider */}
+          <div className="block lg:hidden border-r border-gray-300 mx-2"></div>
 
-            {/* Diastolic */}
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-3 h-3 rounded-full bg-[#8C6FE6]"></span>
-                <span className="text-sm font-bold text-[#072635]">Diastolic</span>
-              </div>
-              <div className="text-2xl font-bold text-[#072635] mb-1">
-                {latest.blood_pressure.diastolic.value}
-              </div>
-              <div className="flex items-center text-sm text-[#072635]">
-                 {latest.blood_pressure.diastolic.levels === 'Higher than Average' ? (
-                   <span className="mr-2">▲</span>
-                ) : latest.blood_pressure.diastolic.levels === 'Lower than Average' ? (
-                   <span className="mr-2">▼</span>
-                ) : (
-                   <span className="mr-2">-</span>
-                )}
-                <span>{latest.blood_pressure.diastolic.levels}</span>
-              </div>
+          {/* Diastolic */}
+          <div className="flex-1 lg:flex-none">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-3 h-3 rounded-full bg-[#8C6FE6]"></span>
+              <span className="text-sm font-bold text-[#072635]">Diastolic</span>
+            </div>
+            <div className="text-xl sm:text-2xl font-bold text-[#072635] mb-1">
+              {latest.blood_pressure.diastolic.value}
+            </div>
+            <div className="flex items-center text-xs sm:text-sm text-[#072635]">
+               {latest.blood_pressure.diastolic.levels === 'Higher than Average' ? (
+                  <span className="mr-2">▲</span>
+              ) : latest.blood_pressure.diastolic.levels === 'Lower than Average' ? (
+                  <span className="mr-2">▼</span>
+              ) : (
+                  <span className="mr-2">-</span>
+              )}
+              <span>{latest.blood_pressure.diastolic.levels}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* --- Bottom Section: 3 Stat Cards --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Grid adapts from 1 column (mobile) to 2 (tablet) to 3 (desktop) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-auto">
         {statsData.map((stat, index) => (
           <div 
             key={index} 
-            className={`${stat.bgColor} rounded-2xl p-4 flex flex-col`}
+            className={`${stat.bgColor} rounded-2xl p-4 flex flex-col justify-between`}
           >
-            <div className="bg-white w-24 h-24 rounded-full flex items-center justify-center mb-4 shadow-sm">
-              {stat.icon}
+            {/* Icon container scales from w-16 to w-24 */}
+            <div className="bg-white w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-sm">
+              <img 
+                src={stat.icon} 
+                alt={stat.title} 
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain" 
+              />
             </div>
-            <h3 className="text-gray-600 font-medium text-base mb-1">{stat.title}</h3>
-            <p className="text-[#072635] text-3xl font-extrabold mb-4">{stat.value}</p>
-            <div className="flex items-center text-sm text-[#072635] mt-auto">
+            
+            <div>
+              <h3 className="text-gray-600 font-medium text-sm sm:text-base mb-1">{stat.title}</h3>
+              {/* Text size adapts */}
+              <p className="text-[#072635] text-2xl sm:text-3xl font-extrabold mb-2 sm:mb-4">{stat.value}</p>
+            </div>
+            
+            <div className="flex items-center text-xs sm:text-sm text-[#072635] mt-auto">
               {stat.isWarning && (
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                 </svg>
               )}
